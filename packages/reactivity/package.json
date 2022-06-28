@@ -1,0 +1,13 @@
+{
+  "name": "@vue/reactivity",
+  "version": "1.0.0",
+  "unpkg": "dist/reactivity.global.js",
+  "main": "dist/reactivity.cjs.js",
+  "module": "dist/reactivity.esm-bundler.js",
+  "buildOptions": {
+    "name": "vueReactivity"
+  },
+  "dependencies": {
+    "@vue/shared": "workspace:^1.0.0"
+  }
+}
