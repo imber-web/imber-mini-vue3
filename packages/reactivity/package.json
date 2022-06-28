@@ -5,7 +5,7 @@
   "main": "dist/reactivity.cjs.js",
   "module": "dist/reactivity.esm-bundler.js",
   "buildOptions": {
-    "name": "vueReactivity"
+    "name": "VueReactivity"
   },
   "dependencies": {
     "@vue/shared": "workspace:^1.0.0"
