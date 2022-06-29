@@ -1,12 +1,9 @@
 import { isObject } from '@vue/shared'
+import { ReactiveFlag, baseHandler } from './baseHandler'
 
 // 判断普通对象有没有代理过，来决定是否用缓存
 const reactiveMap = new WeakMap()
-
-//判断有没有reactive过，来决定是否用缓存
-const enum ReactiveFlag {
-  IS_REACTIVE = '__v__isReactive'
-}
+// reactive函数
 export function reactive(target) {
   // 只能代理对象
   if (!isObject(target)) {
@@ -26,19 +23,7 @@ export function reactive(target) {
     return existing
   }
   // proxy代理
-  const proxy = new Proxy(target, {
-    get(target, key, receiver) {
-      if (key === ReactiveFlag.IS_REACTIVE) {
-        return true
-      }
-      console.log('这里可以记录这个属性使用了哪个effect')
-      return Reflect.get(target, key, receiver)
-    },
-    set(target, key, value, receiver) {
-      console.log('这里可以通知effect重新执行')
-      return Reflect.set(target, key, value, receiver)
-    }
-  })
+  const proxy = new Proxy(target, baseHandler)
   reactiveMap.set(target, proxy)
   return proxy
 }
