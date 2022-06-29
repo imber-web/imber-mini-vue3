@@ -22,7 +22,7 @@ export class ReactiveEffect {
   public parent = null //属性描述
   public deps = [] //effect中用了哪些属性，后续清理的时候要使用
   // 传一个fn，就直接放到this上
-  constructor(public fn, public scheduler) {}
+  constructor(public fn, public scheduler?) {}
   // this就是effect
   run() {
     if (!this.active) {
@@ -59,6 +59,10 @@ export function trigger(target, key, value) {
     return //属性没用依赖任何effect
   }
   let effects = depsMap.get(key) //set[effect]
+  triggerEffects(effects)
+}
+// 触发effects
+export function triggerEffects(effects) {
   if (effects) {
     effects = new Set(effects) //用于清除操作，避免循环依赖
     effects.forEach((effect) => {
@@ -86,16 +90,20 @@ export function track(target, key) {
     if (!deps) {
       depsMap.set(key, (deps = new Set()))
     }
-    let shouldTrack = !deps.has(activeEffect)
-    if (shouldTrack) {
-      // debugger
-      //没用这个激活的effect再添加
-      // 属性记住effect
-      deps.add(activeEffect) //[effect]
-      // effect记住属性,因为activeEffect是个类,然后public deps,所以有这方法
-      activeEffect.deps.push(deps) //存的每个属性对应的set
-      // effect.deps = [[effct]]
-    }
+    trackEffects(deps)
+  }
+}
+// 收集effects
+export function trackEffects(deps) {
+  let shouldTrack = !deps.has(activeEffect)
+  if (shouldTrack) {
+    // debugger
+    //没用这个激活的effect再添加
+    // 属性记住effect
+    deps.add(activeEffect) //[effect]
+    // effect记住属性,因为activeEffect是个类,然后public deps,所以有这方法
+    activeEffect.deps.push(deps) //存的每个属性对应的set
+    // effect.deps = [[effct]]
   }
 }
 //副作用函数
