@@ -22,7 +22,7 @@ export class ReactiveEffect {
   public parent = null //属性描述
   public deps = [] //effect中用了哪些属性，后续清理的时候要使用
   // 传一个fn，就直接放到this上
-  constructor(public fn) {}
+  constructor(public fn, public scheduler) {}
   // this就是effect
   run() {
     if (!this.active) {
@@ -42,6 +42,12 @@ export class ReactiveEffect {
       }
     }
   }
+  stop() {
+    if (this.active) {
+      this.active = false
+      cleanEffect(this)
+    }
+  }
 }
 // 哪个对象中的哪个属性，对应的哪个effect，一个属性对应多个effect
 // 外层用一个map{object：{name:[effect,effect]},age:[effect,effect]}
@@ -58,7 +64,11 @@ export function trigger(target, key, value) {
     effects.forEach((effect) => {
       // 防止effect里面改变数据，死循环问题
       if (effect !== activeEffect) {
-        effect.run() //数据变化重新执行effect
+        if (effect.scheduler) {
+          effect.scheduler() //提供一个调度函数,如果用户提供scheduler,优先走scheduler
+        } else {
+          effect.run() //数据变化重新执行effect
+        }
       }
     })
   }
@@ -78,7 +88,7 @@ export function track(target, key) {
     }
     let shouldTrack = !deps.has(activeEffect)
     if (shouldTrack) {
-      debugger
+      // debugger
       //没用这个激活的effect再添加
       // 属性记住effect
       deps.add(activeEffect) //[effect]
@@ -89,8 +99,12 @@ export function track(target, key) {
   }
 }
 //副作用函数
-export function effect(fn) {
+export function effect(fn, options = {} as any) {
   //将传递的函数变成响应式的effect
-  const _effect = new ReactiveEffect(fn)
+  const _effect = new ReactiveEffect(fn, options.scheduler)
   _effect.run()
+  // effect返回runner的目的是让用户可以自己控制渲染逻辑
+  const runner = _effect.run.bind(_effect)
+  runner.effect = _effect //暴露effct实例
+  return runner //用户可以手动调用runner重新执行
 }
