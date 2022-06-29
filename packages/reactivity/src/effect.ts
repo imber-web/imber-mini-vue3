@@ -4,6 +4,18 @@ export let activeEffect = undefined
 // 同理也让effect记住对应的属性
 // weakMap:{map:{key:new Set()}}
 // 数据变化的时候，找到对应的map，通过属性触发set中effect
+
+// 清理操作
+function cleanEffect(effect) {
+  // 需要清理effect中存入属性中的set中的effect
+  let deps = effect.deps //set
+  //因为这个deps是引用数据类型,后面this.fn()会增加导致无限循环
+  // 用effects = new Set(effects) 消除引用关系
+  for (let i = 0; i < deps.length; i++) {
+    deps[i].delete(effect)
+  }
+  effect.deps.length = 0
+}
 //响应式effect
 export class ReactiveEffect {
   public active = true
@@ -11,6 +23,7 @@ export class ReactiveEffect {
   public deps = [] //effect中用了哪些属性，后续清理的时候要使用
   // 传一个fn，就直接放到this上
   constructor(public fn) {}
+  // this就是effect
   run() {
     if (!this.active) {
       return this.fn()
@@ -20,6 +33,7 @@ export class ReactiveEffect {
       try {
         this.parent = activeEffect
         activeEffect = this //暴露到全局
+        cleanEffect(this) //清除操作
         return this.fn() //去proxy对象上取值
       } finally {
         //因为effect函数之外是不需要依赖收集的
@@ -31,40 +45,46 @@ export class ReactiveEffect {
 }
 // 哪个对象中的哪个属性，对应的哪个effect，一个属性对应多个effect
 // 外层用一个map{object：{name:[effect,effect]},age:[effect,effect]}
-const targetMap = new WeakMap()
+const targetMap = new WeakMap() //必须在上层,利用单线程,后面能取出effect
 // 触发更新
 export function trigger(target, key, value) {
   let depsMap = targetMap.get(target)
   if (!depsMap) {
     return //属性没用依赖任何effect
   }
-  const effects = depsMap.get(key)
-  effects &&
+  let effects = depsMap.get(key) //set[effect]
+  if (effects) {
+    effects = new Set(effects) //用于清除操作，避免循环依赖
     effects.forEach((effect) => {
       // 防止effect里面改变数据，死循环问题
       if (effect !== activeEffect) {
         effect.run() //数据变化重新执行effect
       }
     })
+  }
 }
 // 收集依赖
 export function track(target, key) {
-  console.log(target, key, activeEffect)
+  // console.log(target, key, activeEffect)
   if (activeEffect) {
     // 依赖收集
-    let depsMap = targetMap.get(target)
+    let depsMap = targetMap.get(target) //从weakmap中获取的map
     if (!depsMap) {
-      targetMap.set(target, (depsMap = new Map()))
+      targetMap.set(target, (depsMap = new Map())) //这个就是存东西的!!!,通过引用关系存进来了
     }
-    let deps = depsMap.get(key)
+    let deps = depsMap.get(key) //从map中获取的set
     if (!deps) {
       depsMap.set(key, (deps = new Set()))
     }
     let shouldTrack = !deps.has(activeEffect)
     if (shouldTrack) {
-      // 互相记住
-      deps.add(activeEffect)
-      activeEffect.deps.push(deps)
+      debugger
+      //没用这个激活的effect再添加
+      // 属性记住effect
+      deps.add(activeEffect) //[effect]
+      // effect记住属性,因为activeEffect是个类,然后public deps,所以有这方法
+      activeEffect.deps.push(deps) //存的每个属性对应的set
+      // effect.deps = [[effct]]
     }
   }
 }
