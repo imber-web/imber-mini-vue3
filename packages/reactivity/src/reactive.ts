@@ -1,5 +1,5 @@
 import { isObject } from '@vue/shared'
-import { ReactiveFlag, baseHandler } from './baseHandler'
+import { ReactiveFlags, baseHandler } from './baseHandler'
 
 // 判断普通对象有没有代理过，来决定是否用缓存
 const reactiveMap = new WeakMap()
@@ -13,7 +13,7 @@ export function reactive(target) {
   // 第二次进来 target[ReactiveFlag.IS_REACTIVE]这一步会去走get
   // get操作：第二次的时候，key就是这里的ReactiveFlag.IS_REACTIVE，
   // 肯定会等于外面定义的ReactiveFlag.IS_REACTIVE，所以为true，返回这个已经proxy的对象
-  if (target[ReactiveFlag.IS_REACTIVE]) {
+  if (target[ReactiveFlags.IS_REACTIVE]) {
     //解决重复reactive对象，传入proxy的情况
     return target
   }

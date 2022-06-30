@@ -1,14 +1,18 @@
 //判断有没有reactive过，来决定是否用缓存
-export const enum ReactiveFlag {
+export const enum ReactiveFlags {
   IS_REACTIVE = '__v__isReactive'
 }
 import { isObject } from '@vue/shared'
 import { reactive } from './reactive'
 import { track, trigger } from './effect'
+
+export function isReactive(value) {
+  return value && value[ReactiveFlags.IS_REACTIVE]
+}
 // proxy里的处理逻辑
 export const baseHandler = {
   get(target, key, receiver) {
-    if (key === ReactiveFlag.IS_REACTIVE) {
+    if (key === ReactiveFlags.IS_REACTIVE) {
       return true
     }
     // console.log('这里可以记录这个属性使用了哪个effect')
