@@ -29,9 +29,8 @@ export const baseHandler = {
     // console.log('这里可以通知effect重新执行')
     // 数据变化后，要根据属性找到对应的effect列表让其依次执行
     let oldValue = Reflect.set(target, key, value, receiver)
-    let result = true
     if (oldValue !== value) {
-      result = Reflect.set(target, key, value, receiver)
+      let result = Reflect.set(target, key, value, receiver)
       // 触发更新
       trigger(target, key, value)
       return result
